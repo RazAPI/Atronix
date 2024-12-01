@@ -455,7 +455,6 @@ setreadonly = function(t, readonly, isreadonly)
     
         return t  
     end
-    end
 
     SetReadOnly = setreadonly
 
