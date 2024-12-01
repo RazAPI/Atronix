@@ -1,6 +1,6 @@
 --[[
  \\ Atronix's Environment
-\\ This was from N-Sploit, big love to them.
+\\ Code is used by N-Sploit & Scorpion.
 ]]
 
 
