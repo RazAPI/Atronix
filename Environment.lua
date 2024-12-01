@@ -87,6 +87,7 @@ function identifyexecutor() return "Atronix", "1.0.0"  end
             return constants[index]
         end
 
+
 function checkcaller() -- thanks to raz for this
     local info = debug.getinfo(2)
     if not info then
