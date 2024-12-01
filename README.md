@@ -7,5 +7,6 @@ This uses N-Sploit's source code, and Maven's UI. Here's the original UI:
 
 The current UNC is ~80%~ 
 
-![image](https://github.com/user-attachments/assets/2161b92e-4f4e-4f77-9780-37c8d1e3957c)
+![image](https://github.com/user-attachments/assets/64f9de50-520f-45f1-bd8f-7c5ffeb72666)
+
 
