@@ -293,9 +293,11 @@ hookfunction = function(original, hook)
     if type(hook) ~= "function" then
         error("The second arg must be a function (hook).")
     end
+
     local hooked = function(...)
-        return hook(...)
+        return hook(...)  -- Call the hook without the original function
     end
+
     local info = debug.getinfo(original)
     if info and info.name then
         getgenv()[info.name] = hooked
@@ -303,46 +305,58 @@ hookfunction = function(original, hook)
         error("Failed to get function name")
     end
 
-    return hook
+    return original  -- Return the original function for reference if needed
 end
 
 local oldsm = setmetatable
 local savedmts = {}
 setmetatable = function(taaable, metatable)
-	local success, result = pcall(function() local result = oldsm(taaable, metatable) end)
-	savedmts[taaable] = metatable
-	if not success then error(result) end
-	return taaable
+    if type(taaable) ~= "table" then
+        error("Expected a table to set a metatable.")
+    end
+
+    local success, result = pcall(function()
+        return oldsm(taaable, metatable)
+    end)
+    savedmts[taaable] = metatable
+    if not success then error(result) end
+    return taaable
 end
+
 getgenv().setmetatable = setmetatable
 
 getrawmetatable = function(taaable)
-	return savedmts[taaable]
-end
-setrawmetatable = function(taaable, newmt)
-	local currentmt = getrawmetatable(taaable)
-	table.foreach(newmt, function(key, value)
-		currentmt[key] = value
-	end)
-	return taaable
+    return savedmts[taaable]
 end
 
-hookmetamethod = function(lr, method, newmethod) 
-	local rawmetatable = getrawmetatable(lr) 
-    local old = rawmetatable[method]
-	rawmetatable[method] = newmethod
-	setrawmetatable(lr, rawmetatable)
-	return old
-end 
+setrawmetatable = function(taaable, newmt)
+    local currentmt = getrawmetatable(taaable)
+    for key, value in pairs(newmt) do
+        currentmt[key] = value
+    end
+    return taaable
+end
+
+hookmetamethod = function(self, method, func)
+    local mt = getrawmetatable(self)
+    local old = mt[method]
+    setreadonly(mt, false)
+    mt[method] = func
+    setreadonly(mt, true)
+    return old
+end
+
 
 replaceclosure = hookfunction
 
 local nilinstances = {}
-game.DescendantRemoving:Connect(function(d) table.insert(nilinstances, d) end)
-function getnilinstances()
-     return nilinstances
- end
+game.DescendantRemoving:Connect(function(d) 
+    table.insert(nilinstances, d) 
+end)
 
+function getnilinstances()
+    return nilinstances
+end
 local objs = {}
 local function trackobj(obj) table.insert(objs, obj) end
 
@@ -358,28 +372,6 @@ createobj("obj2")
 function getgc()
  return objs
  end
-
-debug.getproto = newcclosure(function(func, level, returnValue)
-    if type(func) ~= "function" then
-        error("Expected a function as the first argument")
-    end
-
-    local info = debug.getinfo(func, "f")
-    if not info then
-        return nil, "Failed to retrieve function info"
-    end
-
-    local innerInfo = debug.getinfo(level, "f")
-    if not innerInfo or not innerInfo.func then
-        return nil, "No inner function found at the specified level"
-    end
-
-    if returnValue then
-        return innerInfo.func, innerInfo.func()
-    end
-
-    return innerInfo.func
-end)
 
         getconnections = newcclosure(function(Event) -- hi
             assert(typeof(Event) == "RBXScriptSignal", "Argument must be a RBXScriptSignal")
