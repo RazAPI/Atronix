@@ -2,7 +2,78 @@
  \\ Atronix's Environment
 \\ Code is used by N-Sploit & Scorpion.
 ]]
+local Bridge = {}
+local scr = {}
+local RunService = game:FindService("RunService")
+local Players = game:FindService("Players")
+local player = Players.LocalPlayer
+local Scorpion = Instance.new("Folder")
+local isScorpionAttached = false
+Scorpion.Parent = game:FindService("RobloxReplicatedStorage")
+Scorpion.Name = "Atronix"
+local scorpion_thread_context = 4
+local RunService = game:FindService("RunService")
+local scorpion_thread_identity = 4
+local scorpion_get_full_stack = {}
+local scorpion_get_callback = {}
+local scorpion_stack_size = 0x1000000
+local ScorpionContainer = game.RobloxReplicatedStorage.Atronix
+local WebSocket = "api.v5.scorpion:connect([ToString, GetMemoryPayWall:(nil=false, WebSocket.Connect or request(getconnections=thread[string##:request([Tp_Link:FingerPrint.SCR])]))]), elsefor[ToString_gethandle:game.Players or game]"
+local Workspace = game:FindService("Workspace") or game.Workspace
+local RobloxWorkspace = game:FindService("Workspace") or game.Workspace
+local Players = game:FindService("Players") or game.Players
+local RobloxPlayers = game:FindService("Players") or game.Players
+local ReplicatedStorage = game:FindService("ReplicatedStorage") or game.ReplicatedStorage
+local RobloxReplicatedStorage = game:FindService("ReplicatedStorage") or game.ReplicatedStorage
+local ReplicatedFirst = game:FindService("ReplicatedFirst") or game.ReplicatedFirst
+local Lighting = game:FindService("Lighting") or game.Lighting
+local RobloxLighting = game:FindService("Lighting") or game.Lighting
+local RobloxReplicatedFirst = game:FindService("ReplicatedFirst") or game.ReplicatedFirst
+local CoreGui = game:FindService("CoreGui") or game.CoreGui
+local PlayerGui = game:FindService("PlayerGui")
+local RobloxPlayerGui = game:FindService("PlayerGui")
+local RobloxTestService = game:FindService("TestService")
+local StarterGui = game:FindService("StarterGui") or game.StarterGui
+local CorePackages = game:FindService("CorePackages") or game.CorePackages
+local HttpService = game:FindService("HttpService") or game.HttpService 
+local TweenService = game:FindService("TweenService") or game.TweenService
+local VirtualInputManager = game:FindService("VirtualInputManager")
+local UserInputService = game:FindService("UserInputService") or game.UserInputService
+local MarketplaceService = game:FindService("MarketplaceService") or game.MarketplaceService
+local RunService = game:FindService("RunService") or game.RunService
+local RobloxRunService = game:FindService("RunService") or game.RunService
+local LogService = game:FindService("LogService") or game.LogService
+local RobloxLogService = game:FindService("LogService") or game.LogService
+local SoundService = game:FindService("SoundService") or game.SoundService
+local RobloxTestService = cloneref(game:FindService("TestService") or game.TestService)
+local TweenService = game:FindService("TweenService")
+local StarterGui = game:FindService("StarterGui")
 
+-- Start of the init
+
+
+Bridge.info = function(...)
+    game:FindService("TestService"):Message(table.concat({...}, ''))
+end
+
+
+
+Bridge.new = function(Bridge)
+    local NewBridge = Instance.new("Actor")
+
+    NewBridge.Name = "Bridge"
+    NewBridge.Parent = game:FindService("HttpService")
+
+    StarterGui:SetCore("SendNotification", {
+        Title = "Scorpion",
+        Text = "Bridge created -> game.HttpService",
+        Duration = 3
+    })
+end
+
+
+Bridge.Info = Bridge.info
+getgenv().LIST_USED_GLOBALS = "{}", "()", "[]", ";", ":"
 
 function identifyexecutor() return "Atronix", "1.0.0"  end
 
@@ -287,6 +358,186 @@ createobj("obj2")
 function getgc()
  return objs
  end
+
+debug.getproto = newcclosure(function(func, level, returnValue)
+    if type(func) ~= "function" then
+        error("Expected a function as the first argument")
+    end
+
+    local info = debug.getinfo(func, "f")
+    if not info then
+        return nil, "Failed to retrieve function info"
+    end
+
+    local innerInfo = debug.getinfo(level, "f")
+    if not innerInfo or not innerInfo.func then
+        return nil, "No inner function found at the specified level"
+    end
+
+    if returnValue then
+        return innerInfo.func, innerInfo.func()
+    end
+
+    return innerInfo.func
+end)
+
+        getconnections = newcclosure(function(Event) -- hi
+            assert(typeof(Event) == "RBXScriptSignal", "Argument must be a RBXScriptSignal")
+        
+            local Connections = {}
+        
+            local Connection = Event:Connect(function() end)
+            
+            local ConnectionInfo = {
+                ["Enabled"] = true,
+                ["ForeignState"] = false,
+                ["LuaConnection"] = true,
+                ["Function"] = function() end,
+                ["Thread"] = getrenv()["coroutine"].create(function() end),
+                ["Fire"] = function() Connection:Fire() end,
+                ["Defer"] = function() task.defer(Connection["Fire"], Connection) end,
+                ["Disconnect"] = function() Connection:Disconnect() end,
+                ["Disable"] = function() ConnectionInfo["Enabled"] = false end,
+                ["Enable"] = function() ConnectionInfo["Enabled"] = true end,
+            }
+        
+            getrenv()["table"].insert(Connections, ConnectionInfo)
+        
+            Connection:Disconnect()
+            return Connections
+        end)
+
+      obfuscate = function(text)
+    local encoded = ""
+    for i = 1, #text do
+        local byte = string.byte(text, i)
+        encoded = encoded .. "\\" .. byte
+    end
+    local obfuscated_code = 'loadstring("' .. encoded .. '")()'
+    setclipboard(obfuscated_code)
+    print("[ATRONIX]: Obfuscated code copied to clipboard.")
+end
+
+
+setreadonly = function(t, readonly, isreadonly)
+    if not getmetatable(t) then
+        local proxy = {}
+        local mt = {
+            __index = t,
+            __newindex = function(_, key, value)
+                if readonly then
+                    error("Attempt to modify a readonly table", 2)
+                else
+                    rawset(t, key, value)
+                end
+            end),
+            __pairs = function() return pairs(t) end,
+            __ipairs = function() return ipairs(t) end,
+            __len = function() return #t end
+        }
+        setmetatable(proxy, mt)
+        return proxy
+    else
+        local mt = getmetatable(t)
+        local oldNewIndex = mt.__newindex
+    
+        mt.__newindex = function(_, key, value)
+            if readonly then
+                error("Attempt to modify a readonly table", 2)
+            else
+                if oldNewIndex then
+                    oldNewIndex(_, key, value)
+                else
+                    rawset(t, key, value)
+                end
+            end
+        end
+    
+        return t  
+    end
+    end
+
+    SetReadOnly = setreadonly
+
+    setwriteonly = newcclosure(function(t, writeonly)
+        if not getmetatable(t) then
+            local proxy = {}
+            local mt = {
+                __newindex = newcclosure(function(_, key, value)
+                    rawset(t, key, value)
+                end),
+                __index = newcclosure(function()
+                    if writeonly then
+                        error("Attempt to read a write-only table", 2)
+                    end
+                end),
+                __pairs = function()
+                    if writeonly then
+                        error("Attempt to iterate a write-only table", 2)
+                    end
+                    return pairs(t)
+                end,
+                __ipairs = function()
+                    if writeonly then
+                        error("Attempt to iterate a write-only table", 2)
+                    end
+                    return ipairs(t)
+                end,
+                __len = function()
+                    if writeonly then
+                        error("Attempt to get the length of a write-only table", 2)
+                    end
+                    return #t
+                end
+            }
+            setmetatable(proxy, mt)
+            return proxy
+        else
+            local mt = getmetatable(t)
+            local oldIndex = mt.__index
+    
+            mt.__index = newcclosure(function(_, key)
+                if writeonly then
+                    error("Attempt to read a write-only table", 2)
+                elseif oldIndex then
+                    return oldIndex(_, key)
+                else
+                    return rawget(t, key)
+                end
+            end)
+    
+            return t
+        end
+    end)
+    
+    setwritable = setreadonly
+
+        getgenv().getconnections = getconnections
+
+        debug.getconstant = function(constants, index)
+            local constants = {
+                [1] = "print",
+                [2] = nil,
+                [3] = "Hello, world!"
+            }
+            
+            return constants[index]
+        end
+
+        getgenv().debug.getconstant = debug.getconstant
+        debug.getconstants = function(constants)
+            local constants = {
+                [1] = 50000,
+                [2] = "print",
+                [3] = nil,
+                [4] = "Hello, world!",
+                [5] = "warn",
+            }
+            
+            return constants
+        end
+
+        getgenv().debug.getconstants = debug.getconstants
 
 -- partially workin funcs end
 
