@@ -430,7 +430,7 @@ setreadonly = function(t, readonly, isreadonly)
                 else
                     rawset(t, key, value)
                 end
-            end),
+            end,
             __pairs = function() return pairs(t) end,
             __ipairs = function() return ipairs(t) end,
             __len = function() return #t end
