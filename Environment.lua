@@ -77,6 +77,15 @@ getgenv().LIST_USED_GLOBALS = "{}", "()", "[]", ";", ":"
 
 function identifyexecutor() return "Atronix", "1.0.0"  end
 
+        debug.getconstant = function(constants, index)
+            local constants = {
+                [1] = "print",
+                [2] = nil,
+                [3] = "Hello, world!"
+            }
+            
+            return constants[index]
+        end
 
 function checkcaller() -- thanks to raz for this
     local info = debug.getinfo(2)
