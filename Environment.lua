@@ -348,14 +348,7 @@ setrawmetatable = function(taaable, newmt)
     return taaable
 end
 
-hookmetamethod = function(self, method, func)
-    local mt = getrawmetatable(self)
-    local old = mt[method]
-    setreadonly(mt, false)
-    mt[method] = func
-    setreadonly(mt, true)
-    return old
-end
+
 
 
 replaceclosure = hookfunction
@@ -461,43 +454,14 @@ end
 
 SetReadOnly = setreadonly
 
-local Metatable = getrawmetatable(game)
-		local Game = game
-		
-		local OldMetatable = Metatable.__namecall
-		
-		
-		setreadonly(Metatable, false)
-		Metatable.__namecall = function(Self, ...)
-		    local Method = getnamecallmethod()
-		        if Method == "HttpGet" or Method == "HttpGetAsync" then
-		            return HttpGet(...)
-		        elseif Method == "GetObjects" then 
-		            return GetObjects(...)
-		        end
-		    if table.find(Keywords, getnamecallmethod()) then
-		        return "Attempt to call protected function"
-		    end
-		    return OldMetatable(Self, ...)
-		end
-		
-		local OldIndex = Metatable.__index
-		
-		
-		setreadonly(Metatable, false)
-		Metatable.__index = function(Self, i)
-		    if Self == game then
-		        if i == "HttpGet" or i == "HttpGetAsync" then 
-		            return HttpGet
-		        elseif i == "GetObjects" then 
-		            return GetObjects
-		        end
-		    end
-		    if table.find(Keywords, i) then
-		        return "Attempt to call protected function"
-		    end
-		    return OldIndex(Self, i)
-		end
+hookmetamethod = function(self, method, func)
+    local mt = getrawmetatable(self)
+    local old = mt[method]
+    setreadonly(mt, false)
+    mt[method] = func
+    setreadonly(mt, true)
+    return old
+end
 
 
 setwriteonly = function(t, writeonly)
@@ -611,7 +575,7 @@ local function loaddecomp(decomptimeout)
         local SHOW_MISC_OPERATIONS = true
         local LIST_USED_GLOBALS = true
         local RETURN_ELAPSED_TIME = false
-    ]]
+    ]]fsetread
     loadstring(string.gsub(decompsrc, "-- CONSTANTS HERE --", CONSTANTS), "Advanced-Decompiler-V3")()
 end
 loaddecomp(10)
