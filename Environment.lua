@@ -133,6 +133,7 @@ else
 
     return t  
 end
+end
 
 	getgenv().setreadonly = setreadonly
 
@@ -288,4 +289,4 @@ end
     end
 end
 
-assert(true, warn("Atronix v1.0.0 loaded")
+assert(true, warn("Atronix v1.0.0 loaded"))
