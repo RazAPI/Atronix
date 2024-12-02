@@ -270,22 +270,16 @@ end
     local inputsrv = game:GetService("UserInputService")
     if inputsrv:GetPlatform() == Enum.Platform.Windows then
         print'Windows'
-        printconsole'Windows'
     elseif inputsrv:GetPlatform() == Enum.Platform.OSX then
         print'macOS'
-        printconsole'MacOS'
     elseif inputsrv:GetPlatform() == Enum.Platform.IOS then
         print'iOS'
-        printconsole'iOS'
     elseif inputsrv:GetPlatform() == Enum.Platform.UWP then
         print'Windows (Microsoft Store)'
-        printconsole'Windows (Microsoft Store)'
     elseif inputsrv:GetPlatform() == Enum.Platform.Android then
         print'Android'
-        printconsole'Android'
     else
-        print'Unknown'
-        printconsole'Unable to find device type'
+        print'Unable to find device type'
     end
 end
 
