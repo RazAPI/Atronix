@@ -6,10 +6,10 @@ local HttpService, UserInputService, InsertService = game:FindService("HttpServi
 local RunService, CoreGui, StarterGui = game:GetService("RunService"), game:FindService("CoreGui"), game:GetService("StarterGui")
 local VirtualInputManager, RobloxReplicatedStorage = Instance.new("VirtualInputManager"), game:GetService("RobloxReplicatedStorage")
 
-if RobloxReplicatedStorage:FindFirstChild("Astronix.") then return end
+if RobloxReplicatedStorage:FindFirstChild("Astronix") then return end
 
 local AstronixContainer = Instance.new("Folder", RobloxReplicatedStorage)
-AstronixContainer.Name = "Astronix."
+AstronixContainer.Name = "Astronix"
 local objectPointerContainer, scriptsContainer = Instance.new("Folder", AstronixContainer), Instance.new("Folder", AstronixContainer)
 objectPointerContainer.Name = "Instance Pointers"
 scriptsContainer.Name = "Scripts"
@@ -32,7 +32,6 @@ local coreModules, blacklistedModuleParents = {}, {
 	"TopBar",
 	"InspectAndBuy",
 	"VoiceChat",
-	"LinkingService"
 }
 
 for _, descendant in CoreGui.RobloxGui.Modules:GetDescendants() do
@@ -521,7 +520,7 @@ function Bridge:loadstring(source, chunkName)
 			end
 
 			if (tick() - clock > 5) then
-				warn("[XENO]: loadstring failed and timed out")
+				warn("[ASTRONIX]: loadstring failed and timed out")
 				for _, module in pairs(cachedModules) do
 					module:Destroy()
 				end
@@ -2271,8 +2270,8 @@ local function listen(coreModule)
 		pcall(function()
 			execution_table = _require(coreModule)
 		end)
-		if type(execution_table) == "table" and execution_table["x e n o"] and (not execution_table.__executed) and coreModule.Parent == scriptsContainer then
-			local execLoad = execution_table["x e n o"]
+		if type(execution_table) == "table" and execution_table["a s t r o n i x"] and (not execution_table.__executed) and coreModule.Parent == scriptsContainer then
+			local execLoad = execution_table["a s t r o n i x"]
 			setfenv(execLoad, merge(getfenv(execLoad), Xeno))
 			task.spawn(execLoad)
 
