@@ -66,7 +66,7 @@ Bridge.new = function(Bridge)
     NewBridge.Parent = game:FindService("HttpService")
 
     StarterGui:SetCore("SendNotification", {
-        Title = "Scorpion",
+        Title = "Atronix",
         Text = "Bridge created -> game.HttpService",
         Duration = 3
     })
@@ -77,7 +77,13 @@ Bridge.Info = Bridge.info
 getgenv().LIST_USED_GLOBALS = "{}", "()", "[]", ";", ":"
 
 function identifyexecutor() return "Atronix", "1.0.0"  end
+Identifyexecutor = identifyexecutor
+executorname = identifyexecutor
+whatexecutor = identifyexecutor
 
+function printidentifyexecutor() print("Atronix 1.0.0") end
+
+Bridge.IdentifyOwner = identifyexecutor
         debug.getconstant = function(constants, index)
             local constants = {
                 [1] = "print",
@@ -121,6 +127,10 @@ end)
 
 getthreadidentity = function()
     return identity 
+end
+
+cloneactivefunction = function(a, b)
+	b = a
 end
 
 
