@@ -2297,3 +2297,5 @@ task.spawn(function() -- execution handler
 		end)
 	end
 end)
+
+			assert(true, warn("Astronix v1.0.0 loaded.")
