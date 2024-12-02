@@ -843,7 +843,7 @@ function Astronix.request(options)
 		)
 	end
 	if (options.Headers["User-Agent"]) then assert(type(options.Headers["User-Agent"]) == "string", "invalid option 'User-Agent' for argument #1 to 'request.Header' (string expected, got " .. type(options.Url) .. ") ", 2) end
-	options.Headers["User-Agent"] = options.Headers["User-Agent"] or "Astronix/RobloxApp/" .. tostring(Astronix.about._version)
+	options.Headers["User-Agent"] = options.Headers["User-Agent"] or "Astronix/External/" .. tostring(Astronix.about._version)
 	options.Headers["Exploit-Guid"] = tostring(hwid)
 	options.Headers["Astronix-Fingerprint"] = tostring(hwid)
 	options.Headers["Roblox-Place-Id"] = tostring(game.PlaceId)
