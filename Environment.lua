@@ -28,7 +28,11 @@ local SoundService = game:FindService("SoundService") or game.SoundService
 local RobloxTestService = cloneref(game:FindService("TestService"))
 local ATRONIX_VERSION = "1.0.0"
  local ATRONIX_NAME = "Atronix"
-  local Atronix = {}
+
+while true do
+	Atronix = {}
+	task.wait(0.001
+end
 
 PROTOSMASHER_LOADED = function(asd, trick) -- lame
     return true
