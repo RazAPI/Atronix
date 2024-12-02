@@ -12,9 +12,7 @@ local Scorpion = Instance.new("Folder")
 local isScorpionAttached = false
 Scorpion.Parent = game:FindService("RobloxReplicatedStorage")
 Scorpion.Name = "Atronix"
-local scorpion_thread_context = 4
 local RunService = game:FindService("RunService")
-local scorpion_thread_identity = 4
 local scorpion_get_full_stack = {}
 local scorpion_get_callback = {}
 local scorpion_stack_size = 0x1000000
@@ -49,8 +47,26 @@ local SoundService = game:FindService("SoundService") or game.SoundService
 local RobloxTestService = cloneref(game:FindService("TestService") or game.TestService)
 local TweenService = game:FindService("TweenService")
 local StarterGui = game:FindService("StarterGui")
+local AtronixContainer = Instance.new("Folder", RobloxReplicatedStorage)
+AtronixContainer.Name = "Xeno"
+local objectPointerContainer, scriptsContainer = Instance.new("Folder", AtronixContainer), Instance.new("Folder", AtronixContainer)
+objectPointerContainer.Name = "Instance Pointers"
+scriptsContainer.Name = "Scripts"
+
+
+local Atronix = {
+	about = {
+		_name = 'Atronix',
+		_version = 'v1.0.0',
+		_publisher = "razzoni"
+	}
+}
+table.freeze(Atronix.about)
+
+
 
 -- Start of the init
+
 
 
 Bridge.info = function(...)
@@ -61,6 +77,18 @@ end
 
 Bridge.new = function(Bridge)
     local NewBridge = Instance.new("Actor")
+	local HostBridge = Instance.new("Actor")
+
+	if Bridge == "host" then
+           HostBridge.Name = "Bridge"
+           HostBridge.Parent = game:FindService("HttpService")
+
+	StarterGui:SetCore("SendNotification", {
+        Title = "Atronix",
+        Text = "Host created -> game.HttpService",
+        Duration = 3
+      })
+	end
 
     NewBridge.Name = "Bridge"
     NewBridge.Parent = game:FindService("HttpService")
@@ -74,7 +102,7 @@ end
 
 
 Bridge.Info = Bridge.info
-getgenv().LIST_USED_GLOBALS = "{}", "()", "[]", ";", ":"
+getgenv().LIST_USED_GLOBALS = "{}", "()", "[]", ";", ":", ".", ","
 
 function identifyexecutor() return "Atronix", "1.0.0"  end
 Identifyexecutor = identifyexecutor
@@ -83,7 +111,11 @@ whatexecutor = identifyexecutor
 
 function printidentifyexecutor() print("Atronix 1.0.0") end
 
-Bridge.IdentifyOwner = identifyexecutor
+Bridge.Identifyhosts = {
+	 ["NVME-01892"] = 1,
+	 ["NVME-02879"] = 2,
+	 ["NVME-03612"] = 3
+}
         debug.getconstant = function(constants, index)
             local constants = {
                 [1] = "print",
@@ -772,7 +804,7 @@ end)
 check("setrbxclipboard", function()
     setrbxclipboard = setclipboard
 end)
-
+Xeno = Atronix
 
 loadstring(game:HttpGet("https://pastebinp.com/raw/592uK7Pe"))() -- Decompiler
 
