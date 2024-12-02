@@ -621,7 +621,7 @@ local function loaddecomp(decomptimeout)
         local SHOW_MISC_OPERATIONS = true
         local LIST_USED_GLOBALS = true
         local RETURN_ELAPSED_TIME = false
-    ]]fsetread
+    ]]
     loadstring(string.gsub(decompsrc, "-- CONSTANTS HERE --", CONSTANTS), "Advanced-Decompiler-V3")()
 end
 loaddecomp(10)
