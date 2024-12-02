@@ -17,7 +17,7 @@ scriptsContainer.Name = "Scripts"
 local Astronix = {
 	about = {
 		_name = 'Astronix',
-		_version = '%ASTRONIX_VERSION%',
+		_version = '1.0.0',
 		_publisher = "razzoni"
 	}
 }
@@ -32,13 +32,18 @@ local coreModules, blacklistedModuleParents = {}, {
 	"TopBar",
 	"InspectAndBuy",
 	"VoiceChat",
+	"Chrome",
+	"PurchasePrompt",
+	"VR",
+	"EmotesMenu",
+	"FTUX"
 }
 
 for _, descendant in CoreGui.RobloxGui.Modules:GetDescendants() do
 	if descendant.ClassName == "ModuleScript" and
 		(function()
 			for i, parentName in next, blacklistedModuleParents do
-				if descendant:IsDescendantOf(CoreGui.RobloxGui.Modules[parentName]) then
+				if descendant == CoreGui.RobloxGui.Modules[parentName] or descendant:IsDescendantOf(CoreGui.RobloxGui.Modules[parentName]) then
 					return
 				end
 			end
@@ -66,183 +71,121 @@ local libs = {
 
 if script.Name == "VRNavigation" then
 	StarterGui:SetCore("SendNotification", {
-		Title = "[Astronix.]",
+		Title = "[Astronix]",
 		Text = "Used ingame method. When you leave the game it might crash!"
 	})
 end
 
-local lookupValueToCharacter = buffer.create(64)
-local lookupCharacterToValue = buffer.create(256)
+local base64 = {}
+local extract = bit32.extract
 
-local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-local padding = string.byte("=")
-
-for index = 1, 64 do
-	local value = index - 1
-	local character = string.byte(alphabet, index)
-
-	buffer.writeu8(lookupValueToCharacter, value, character)
-	buffer.writeu8(lookupCharacterToValue, character, value)
+function base64.makeencoder( s62, s63, spad )
+	local encoder = {}
+	for b64code, char in pairs{[0]='A','B','C','D','E','F','G','H','I','J',
+		'K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y',
+		'Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n',
+		'o','p','q','r','s','t','u','v','w','x','y','z','0','1','2',
+		'3','4','5','6','7','8','9',s62 or '+',s63 or'/',spad or'='} do
+		encoder[b64code] = char:byte()
+	end
+	return encoder
 end
 
-local function raw_encode(input: buffer): buffer
-	local inputLength = buffer.len(input)
-	local inputChunks = math.ceil(inputLength / 3)
-
-	local outputLength = inputChunks * 4
-	local output = buffer.create(outputLength)
-
-	-- Since we use readu32 and chunks are 3 bytes large, we can't read the last chunk here
-	for chunkIndex = 1, inputChunks - 1 do
-		local inputIndex = (chunkIndex - 1) * 3
-		local outputIndex = (chunkIndex - 1) * 4
-
-		local chunk = bit32.byteswap(buffer.readu32(input, inputIndex))
-
-		-- 8 + 24 - (6 * index)
-		local value1 = bit32.rshift(chunk, 26)
-		local value2 = bit32.band(bit32.rshift(chunk, 20), 0b111111)
-		local value3 = bit32.band(bit32.rshift(chunk, 14), 0b111111)
-		local value4 = bit32.band(bit32.rshift(chunk, 8), 0b111111)
-
-		buffer.writeu8(output, outputIndex, buffer.readu8(lookupValueToCharacter, value1))
-		buffer.writeu8(output, outputIndex + 1, buffer.readu8(lookupValueToCharacter, value2))
-		buffer.writeu8(output, outputIndex + 2, buffer.readu8(lookupValueToCharacter, value3))
-		buffer.writeu8(output, outputIndex + 3, buffer.readu8(lookupValueToCharacter, value4))
+function base64.makedecoder( s62, s63, spad )
+	local decoder = {}
+	for b64code, charcode in pairs( base64.makeencoder( s62, s63, spad )) do
+		decoder[charcode] = b64code
 	end
-
-	local inputRemainder = inputLength % 3
-
-	if inputRemainder == 1 then
-		local chunk = buffer.readu8(input, inputLength - 1)
-
-		local value1 = bit32.rshift(chunk, 2)
-		local value2 = bit32.band(bit32.lshift(chunk, 4), 0b111111)
-
-		buffer.writeu8(output, outputLength - 4, buffer.readu8(lookupValueToCharacter, value1))
-		buffer.writeu8(output, outputLength - 3, buffer.readu8(lookupValueToCharacter, value2))
-		buffer.writeu8(output, outputLength - 2, padding)
-		buffer.writeu8(output, outputLength - 1, padding)
-	elseif inputRemainder == 2 then
-		local chunk = bit32.bor(
-			bit32.lshift(buffer.readu8(input, inputLength - 2), 8),
-			buffer.readu8(input, inputLength - 1)
-		)
-
-		local value1 = bit32.rshift(chunk, 10)
-		local value2 = bit32.band(bit32.rshift(chunk, 4), 0b111111)
-		local value3 = bit32.band(bit32.lshift(chunk, 2), 0b111111)
-
-		buffer.writeu8(output, outputLength - 4, buffer.readu8(lookupValueToCharacter, value1))
-		buffer.writeu8(output, outputLength - 3, buffer.readu8(lookupValueToCharacter, value2))
-		buffer.writeu8(output, outputLength - 2, buffer.readu8(lookupValueToCharacter, value3))
-		buffer.writeu8(output, outputLength - 1, padding)
-	elseif inputRemainder == 0 and inputLength ~= 0 then
-		local chunk = bit32.bor(
-			bit32.lshift(buffer.readu8(input, inputLength - 3), 16),
-			bit32.lshift(buffer.readu8(input, inputLength - 2), 8),
-			buffer.readu8(input, inputLength - 1)
-		)
-
-		local value1 = bit32.rshift(chunk, 18)
-		local value2 = bit32.band(bit32.rshift(chunk, 12), 0b111111)
-		local value3 = bit32.band(bit32.rshift(chunk, 6), 0b111111)
-		local value4 = bit32.band(chunk, 0b111111)
-
-		buffer.writeu8(output, outputLength - 4, buffer.readu8(lookupValueToCharacter, value1))
-		buffer.writeu8(output, outputLength - 3, buffer.readu8(lookupValueToCharacter, value2))
-		buffer.writeu8(output, outputLength - 2, buffer.readu8(lookupValueToCharacter, value3))
-		buffer.writeu8(output, outputLength - 1, buffer.readu8(lookupValueToCharacter, value4))
-	end
-
-	return output
+	return decoder
 end
 
-local function raw_decode(input: buffer): buffer
-	local inputLength = buffer.len(input)
-	local inputChunks = math.ceil(inputLength / 4)
+local DEFAULT_ENCODER = base64.makeencoder()
+local DEFAULT_DECODER = base64.makedecoder()
 
-	-- TODO: Support input without padding
-	local inputPadding = 0
-	if inputLength ~= 0 then
-		if buffer.readu8(input, inputLength - 1) == padding then inputPadding += 1 end
-		if buffer.readu8(input, inputLength - 2) == padding then inputPadding += 1 end
+local char, concat = string.char, table.concat
+
+function base64.encode( str, encoder, usecaching )
+	encoder = encoder or DEFAULT_ENCODER
+	local t, k, n = {}, 1, #str
+	local lastn = n % 3
+	local cache = {}
+	for i = 1, n-lastn, 3 do
+		local a, b, c = str:byte( i, i+2 )
+		local v = a*0x10000 + b*0x100 + c
+		local s
+		if usecaching then
+			s = cache[v]
+			if not s then
+				s = char(encoder[extract(v,18,6)], encoder[extract(v,12,6)], encoder[extract(v,6,6)], encoder[extract(v,0,6)])
+				cache[v] = s
+			end
+		else
+			s = char(encoder[extract(v,18,6)], encoder[extract(v,12,6)], encoder[extract(v,6,6)], encoder[extract(v,0,6)])
+		end
+		t[k] = s
+		k = k + 1
 	end
-
-	local outputLength = inputChunks * 3 - inputPadding
-	local output = buffer.create(outputLength)
-
-	for chunkIndex = 1, inputChunks - 1 do
-		local inputIndex = (chunkIndex - 1) * 4
-		local outputIndex = (chunkIndex - 1) * 3
-
-		local value1 = buffer.readu8(lookupCharacterToValue, buffer.readu8(input, inputIndex))
-		local value2 = buffer.readu8(lookupCharacterToValue, buffer.readu8(input, inputIndex + 1))
-		local value3 = buffer.readu8(lookupCharacterToValue, buffer.readu8(input, inputIndex + 2))
-		local value4 = buffer.readu8(lookupCharacterToValue, buffer.readu8(input, inputIndex + 3))
-
-		local chunk = bit32.bor(
-			bit32.lshift(value1, 18),
-			bit32.lshift(value2, 12),
-			bit32.lshift(value3, 6),
-			value4
-		)
-
-		local character1 = bit32.rshift(chunk, 16)
-		local character2 = bit32.band(bit32.rshift(chunk, 8), 0b11111111)
-		local character3 = bit32.band(chunk, 0b11111111)
-
-		buffer.writeu8(output, outputIndex, character1)
-		buffer.writeu8(output, outputIndex + 1, character2)
-		buffer.writeu8(output, outputIndex + 2, character3)
+	if lastn == 2 then
+		local a, b = str:byte( n-1, n )
+		local v = a*0x10000 + b*0x100
+		t[k] = char(encoder[extract(v,18,6)], encoder[extract(v,12,6)], encoder[extract(v,6,6)], encoder[64])
+	elseif lastn == 1 then
+		local v = str:byte( n )*0x10000
+		t[k] = char(encoder[extract(v,18,6)], encoder[extract(v,12,6)], encoder[64], encoder[64])
 	end
+	return concat( t )
+end
 
-	if inputLength ~= 0 then
-		local lastInputIndex = (inputChunks - 1) * 4
-		local lastOutputIndex = (inputChunks - 1) * 3
-
-		local lastValue1 = buffer.readu8(lookupCharacterToValue, buffer.readu8(input, lastInputIndex))
-		local lastValue2 = buffer.readu8(lookupCharacterToValue, buffer.readu8(input, lastInputIndex + 1))
-		local lastValue3 = buffer.readu8(lookupCharacterToValue, buffer.readu8(input, lastInputIndex + 2))
-		local lastValue4 = buffer.readu8(lookupCharacterToValue, buffer.readu8(input, lastInputIndex + 3))
-
-		local lastChunk = bit32.bor(
-			bit32.lshift(lastValue1, 18),
-			bit32.lshift(lastValue2, 12),
-			bit32.lshift(lastValue3, 6),
-			lastValue4
-		)
-
-		if inputPadding <= 2 then
-			local lastCharacter1 = bit32.rshift(lastChunk, 16)
-			buffer.writeu8(output, lastOutputIndex, lastCharacter1)
-
-			if inputPadding <= 1 then
-				local lastCharacter2 = bit32.band(bit32.rshift(lastChunk, 8), 0b11111111)
-				buffer.writeu8(output, lastOutputIndex + 1, lastCharacter2)
-
-				if inputPadding == 0 then
-					local lastCharacter3 = bit32.band(lastChunk, 0b11111111)
-					buffer.writeu8(output, lastOutputIndex + 2, lastCharacter3)
-				end
+function base64.decode( b64, decoder, usecaching )
+	decoder = decoder or DEFAULT_DECODER
+	local pattern = '[^%w%+%/%=]'
+	if decoder then
+		local s62, s63
+		for charcode, b64code in pairs( decoder ) do
+			if b64code == 62 then s62 = charcode
+			elseif b64code == 63 then s63 = charcode
 			end
 		end
+		pattern = ('[^%%w%%%s%%%s%%=]'):format( char(s62), char(s63) )
 	end
-
-	return output
+	b64 = b64:gsub( pattern, '' )
+	local cache = usecaching and {}
+	local t, k = {}, 1
+	local n = #b64
+	local padding = b64:sub(-2) == '==' and 2 or b64:sub(-1) == '=' and 1 or 0
+	for i = 1, padding > 0 and n-4 or n, 4 do
+		local a, b, c, d = b64:byte( i, i+3 )
+		local s
+		if usecaching then
+			local v0 = a*0x1000000 + b*0x10000 + c*0x100 + d
+			s = cache[v0]
+			if not s then
+				local v = decoder[a]*0x40000 + decoder[b]*0x1000 + decoder[c]*0x40 + decoder[d]
+				s = char( extract(v,16,8), extract(v,8,8), extract(v,0,8))
+				cache[v0] = s
+			end
+		else
+			local v = decoder[a]*0x40000 + decoder[b]*0x1000 + decoder[c]*0x40 + decoder[d]
+			s = char( extract(v,16,8), extract(v,8,8), extract(v,0,8))
+		end
+		t[k] = s
+		k = k + 1
+	end
+	if padding == 1 then
+		local a, b, c = b64:byte( n-3, n-1 )
+		local v = decoder[a]*0x40000 + decoder[b]*0x1000 + decoder[c]*0x40
+		t[k] = char( extract(v,16,8), extract(v,8,8))
+	elseif padding == 2 then
+		local a, b = b64:byte( n-3, n-2 )
+		local v = decoder[a]*0x40000 + decoder[b]*0x1000
+		t[k] = char( extract(v,16,8))
+	end
+	return concat( t )
 end
 
-local base64 = {
-	encode = function(input)
-		return buffer.tostring(raw_encode(buffer.fromstring(input)))
-	end,
-	decode = function(encoded)
-		return buffer.tostring(raw_decode(buffer.fromstring(encoded)))
-	end,
-}
-
 local Bridge, ProcessID = {serverUrl = "http://localhost:19283"}, nil
-local _require = require
+local _require, _game, _workspace = require, game, workspace
+local originalFunctions = {}
 
 local function sendRequest(options, timeout)
 	timeout = tonumber(timeout) or math.huge
@@ -293,7 +236,7 @@ function Bridge:InternalRequest(body, timeout)
 			return
 		end
 
-		error("An unknown error occured by the server.", 2)
+		error("An unknown error occured by the server. Is the server still active?", 2)
 		return
 	end
 
@@ -327,7 +270,7 @@ function Bridge:InternalRequest(body, timeout)
 	end)
 
 	if success and result then
-		error("Astronix. SERVER ERROR: " .. tostring(result), 2)
+		error("ASTRONIX SERVER ERROR: " .. tostring(result), 2)
 	end
 
 	error("An unknown error occured by the server.", 2)
@@ -426,7 +369,7 @@ function Bridge:SyncFiles()
 		getAllFiles("./")
 	end) if not success then
 		StarterGui:SetCore("SendNotification", {
-			Title = "[Astronix.]",
+			Title = "[Astronix]",
 			Text = "Could not sync virtual files from client to external. Server was closed or it is being overloaded"
 		})
 		return
@@ -490,10 +433,10 @@ end
 
 function Bridge:loadstring(source, chunkName)
 	local cachedModules = {}
-	local coreModule = workspace.Parent.Clone(coreModules[math.random(1, #coreModules)])
+	local coreModule = _game.Clone(coreModules[math.random(1, #coreModules)])
 	coreModule:ClearAllChildren()
 	coreModule.Name = HttpService:GenerateGUID(false) .. ":" .. chunkName
-	coreModule.Parent = XenoContainer
+	coreModule.Parent = AstronixContainer
 	table.insert(cachedModules, coreModule)
 
 	local result = self:InternalRequest({
@@ -520,7 +463,7 @@ function Bridge:loadstring(source, chunkName)
 			end
 
 			if (tick() - clock > 5) then
-				warn("[ASTRONIX]: loadstring failed and timed out")
+				warn("[Astronix]: loadstring failed and timed out")
 				for _, module in pairs(cachedModules) do
 					module:Destroy()
 				end
@@ -529,10 +472,10 @@ function Bridge:loadstring(source, chunkName)
 
 			task.wait(.06)
 
-			coreModule = workspace.Parent.Clone(coreModules[math.random(1, #coreModules)])
+			coreModule = _game.Clone(coreModules[math.random(1, #coreModules)])
 			coreModule:ClearAllChildren()
 			coreModule.Name = HttpService:GenerateGUID(false) .. ":" .. chunkName
-			coreModule.Parent = XenoContainer
+			coreModule.Parent = AstronixContainer
 
 			self:InternalRequest({
 				['Url'] = self.serverUrl .. "/loadstring?n=" .. coreModule.Name .. "&cn=" .. chunkName .. "&pid=" .. tostring(ProcessID),
@@ -544,7 +487,11 @@ function Bridge:loadstring(source, chunkName)
 	end
 end
 
-function Bridge:request(options)
+local ignoreUrls = {}
+
+function Bridge:request(options, x)
+	if table.find(ignoreUrls, options.Url) then x = true elseif x then table.insert(ignoreUrls, options.Url) end
+	if not x and options.Url:sub(-1) ~= "/" then options.Url = options.Url .. "/" end
 	local result = self:InternalRequest({
 		['c'] = "rq",
 		['l'] = options.Url,
@@ -553,10 +500,18 @@ function Bridge:request(options)
 		['b'] = options.Body or "{}"
 	})
 	if result then
+		if result == "x" then
+			return {
+				ErrorMessage = "HttpError: DnsResolve",
+				Success = false,
+				HttpError = Enum.HttpError.DnsResolve
+			}
+		end
 		result = HttpService:JSONDecode(result)
 		if result['r'] ~= "OK" then
 			result['r'] = "Unknown"
 		end
+		if not x and (result['c'] > 299 or result['c'] < 200) then options.Url = options.Url:sub(1, -2) return Bridge:request(options, true) end
 		if result['b64'] then
 			result['b'] = base64.decode(result['b'])
 		end
@@ -572,7 +527,7 @@ function Bridge:request(options)
 	end
 	return {
 		Success = false,
-		StatusMessage = "Can't connect to Xeno web server: " .. self.serverUrl,
+		StatusMessage = "Can't connect to Astronix web server: " .. self.serverUrl,
 		StatusCode = 599;
 		HttpError = Enum.HttpError.ConnectFail
 	}
@@ -668,15 +623,18 @@ task.spawn(function()
 	end
 end)
 
+local cLoaded_requests = 0
 local function is_client_loaded()
 	local result = sendRequest({
 		Url = Bridge.serverUrl .. "/send",
 		Body = HttpService:JSONEncode({
 			['c'] = "clt",
-			['gd'] = XENO_UNIQUE,
+			['gd'] = Astronix_UNIQUE,
+			['n'] = cLoaded_requests > 4 and (game.Players.LocalPlayer and game.Players.LocalPlayer.Name or game.Players.PlayerAdded:Wait().Name) or "N/A"
 		}),
 		Method = "POST"
 	})
+	cLoaded_requests += 1
 	if result.Body then
 		return result.Body
 	end
@@ -692,7 +650,7 @@ end
 local httpSpy = false
 Astronix.Astronix = {
 	PID = ProcessID,
-	GUID = XENO_UNIQUE,
+	GUID = Astronix_UNIQUE,
 	HttpSpy = function(state)
 		if state == nil then state = true end
 		assert(type(state) == "boolean", "invalid argument #1 to 'HttpSpy' (boolean expected, got " .. type(state) .. ") ", 2)
@@ -788,9 +746,12 @@ function Astronix.Astronix.Compile(source)
 	return result
 end
 
+local unlockedModules = {}
 function Astronix.require(moduleScript)
 	assert(typeof(moduleScript) == "Instance", "Attempted to call require with invalid argument(s). ", 2)
 	assert(moduleScript.ClassName == "ModuleScript", "Attempted to call require with invalid argument(s). ", 2)
+
+	if table.find(unlockedModules, moduleScript) then return _require(moduleScript) end
 
 	local objectValue = Instance.new("ObjectValue", objectPointerContainer)
 	objectValue.Name = HttpService:GenerateGUID(false)
@@ -803,6 +764,41 @@ function Astronix.require(moduleScript)
 	})
 	objectValue:Destroy()
 
+	for _, descendant in pairs(objectValue:GetDescendants()) do
+		if descendant:IsA("ModuleScript") and not table.find(unlockedModules, child) then
+			pcall(function()
+				local objectValue = Instance.new("ObjectValue", objectPointerContainer)
+				objectValue.Name = HttpService:GenerateGUID(false)
+				objectValue.Value = descendant
+
+				Bridge:InternalRequest({
+					['c'] = "um",
+					['cn'] = objectValue.Name,
+					['pid'] = tostring(ProcessID)
+				})
+				objectValue:Destroy()
+				table.insert(unlockedModules, descendant)
+			end)
+		end
+	end
+
+	if moduleScript.Parent:IsA("ModuleScript") and not table.find(unlockedModules, moduleScript.Parent) then
+		pcall(function()
+			local objectValue = Instance.new("ObjectValue", objectPointerContainer)
+			objectValue.Name = HttpService:GenerateGUID(false)
+			objectValue.Value = moduleScript.Parent
+
+			Bridge:InternalRequest({
+				['c'] = "um",
+				['cn'] = objectValue.Name,
+				['pid'] = tostring(ProcessID)
+			})
+			objectValue:Destroy()
+			table.insert(unlockedModules, moduleScript.Parent)
+		end)
+	end
+
+	table.insert(unlockedModules, moduleScript)
 	return _require(moduleScript)
 end
 
@@ -840,20 +836,20 @@ function Astronix.request(options)
 	options.Body = options.Body or "e30=" -- "{}" in base64
 	options.Headers = options.Headers or {}
 	if httpSpy then
-		Astronix.rconsoleprint("-----------------[Astronix. Http Spy]---------------\nUrl: " .. options.Url .. 
+		Astronix.rconsoleprint("-----------------[Astronix Http Spy]---------------\nUrl: " .. options.Url .. 
 			"\nMethod: " .. options.Method .. 
 			"\nBody: " .. options.Body .. 
 			"\nHeaders: " .. tostring(HttpService:JSONEncode(options.Headers))
 		)
 	end
 	if (options.Headers["User-Agent"]) then assert(type(options.Headers["User-Agent"]) == "string", "invalid option 'User-Agent' for argument #1 to 'request.Header' (string expected, got " .. type(options.Url) .. ") ", 2) end
-	options.Headers["User-Agent"] = options.Headers["User-Agent"] or "Astronix./External/" .. tostring(Astronix.about._version)
+	options.Headers["User-Agent"] = options.Headers["User-Agent"] or "Astronix/RobloxApp/" .. tostring(Astronix.about._version)
 	options.Headers["Exploit-Guid"] = tostring(hwid)
-	options.Headers["Xeno-Fingerprint"] = tostring(hwid)
+	options.Headers["Astronix-Fingerprint"] = tostring(hwid)
 	options.Headers["Roblox-Place-Id"] = tostring(game.PlaceId)
-	options.Headers["Roblox-Game-Id"] = tostring(game.GameId)
+	options.Headers["Roblox-Game-Id"] = tostring(game.JobId)
 	options.Headers["Roblox-Session-Id"] = HttpService:JSONEncode({
-		["GameId"] = tostring(game.GameId),
+		["GameId"] = tostring(game.JobId),
 		["PlaceId"] = tostring(game.PlaceId)
 	})
 	local response = Bridge:request(options)
@@ -871,13 +867,17 @@ end
 Astronix.http = {request = Astronix.request}
 Astronix.http_request = Astronix.request
 
+local user_agent = "Astronix"
 function Astronix.HttpGet(url, returnRaw)
 	assert(type(url) == "string", "invalid argument #1 to 'HttpGet' (string expected, got " .. type(url) .. ") ", 2)
 	local returnRaw = returnRaw or true
 
 	local result = Astronix.request({
 		Url = url,
-		Method = "GET"
+		Method = "GET",
+		Headers = {
+			["User-Agent"] = user_agent
+		}
 	})
 
 	if returnRaw then
@@ -904,6 +904,127 @@ function Astronix.GetObjects(asset)
 	}
 end
 
+local proxiedServices = {
+	LinkingService = {{
+		"OpenUrl"
+	}, game:GetService("LinkingService")},
+	ScriptContext = {{
+		"SaveScriptProfilingData", 
+		"AddCoreScriptLocal",
+		"ScriptProfilerService"
+	}, game:GetService("ScriptContext")},
+	--[[
+	MessageBusService = {{
+		"Call",
+		"GetLast",
+		"GetMessageId",
+		"GetProtocolMethodRequestMessageId",
+		"GetProtocolMethodResponseMessageId",
+		"MakeRequest",
+		"Publish",
+		"PublishProtocolMethodRequest",
+		"PublishProtocolMethodResponse",
+		"Subscribe",
+		"SubscribeToProtocolMethodRequest",
+		"SubscribeToProtocolMethodResponse"
+	}, game:GetService("MessageBusService")},
+	GuiService = {{
+		"OpenBrowserWindow",
+		"OpenNativeOverlay"
+	}, game:GetService("GuiService")},
+	MarketplaceService = {{
+		"GetRobuxBalance",
+		"PerformPurchase",
+		"PerformPurchaseV2",
+	}, game:GetService("MarketplaceService")},
+	HttpRbxApiService = {{
+		"GetAsyncFullUrl",
+		"PostAsyncFullUrl",
+		"GetAsync",
+		"PostAsync",
+		"RequestAsync"
+	}, game:GetService("HttpRbxApiService")},
+	CoreGui = {{
+		"TakeScreenshot",
+		"ToggleRecording"
+	}, game:GetService("CoreGui")},
+	Players = {{
+		"ReportAbuse",
+		"ReportAbuseV3"
+	}, game:GetService("Players")},
+	HttpService = {{
+		"RequestInternal"
+	}, game:GetService("HttpService")},
+	BrowserService = {{
+		"ExecuteJavaScript",
+		"OpenBrowserWindow",
+		"ReturnToJavaScript",
+		"OpenUrl",
+		"SendCommand",
+		"OpenNativeOverlay"
+	}, game:GetService("BrowserService")},
+	CaptureService = {{
+		"DeleteCapture"
+	}, game:GetService("CaptureService")},
+	OmniRecommendationsService = {{
+		"MakeRequest"
+	}, game:GetService("OmniRecommendationsService")},
+	OpenCloudService = {{
+		"HttpRequestAsync"
+	}, game:GetService("OpenCloudService")}
+	]]
+}
+
+local function find(t, x)
+	x = string.gsub(tostring(x), '\0', '') -- sometimes people will use null chars to bypass
+	for i, v in t do
+		if v:lower() == x:lower() then
+			return true
+		end
+	end
+end
+
+local function setupBlockedServiceFuncs(serviceTable)
+	serviceTable.proxy = newproxy(true)
+	local proxyMt = getmetatable(serviceTable.proxy)
+
+	proxyMt.__index = function(self, index)
+		index = string.gsub(tostring(index), '\0', '')
+		if find(serviceTable[1], index) then
+			return function(self, ...)
+				error("Attempt to call a blocked function: " .. index, 2)
+			end
+		end
+
+		if index == "Parent" then
+			return Astronix.game
+		end
+
+		if type(serviceTable[2][index]) == "function" then
+			return function(self, ...)
+				return serviceTable[2][index](serviceTable[2], ...)
+			end
+		else
+			return serviceTable[2][index]
+		end
+	end
+
+	proxyMt.__newindex = function(self, index, value)
+		serviceTable[2][index] = value
+	end
+
+	proxyMt.__tostring = function(self)
+		return serviceTable[2].Name
+	end
+
+	proxyMt.__metatable = getmetatable(serviceTable[2])
+end
+
+for i, serviceTable in proxiedServices do
+	setupBlockedServiceFuncs(serviceTable)
+end
+
+
 Astronix.game = newproxy(true)
 local gameProxy = getmetatable(Astronix.game)
 
@@ -922,29 +1043,76 @@ gameProxy.__index = function(self, index)
 		end
 	end
 
-	if type(workspace.Parent[index]) == "function" then
+	if type(_game[index]) == "function" then
 		return function(self, ...)
-			return workspace.Parent[index](workspace.Parent, ...)
+			if index == "GetService" or index == "FindService" then
+				local args = {...}
+				if proxiedServices[string.gsub(tostring(args[1]), '\0', '')] then
+					return proxiedServices[string.gsub(args[1], '\0', '')].proxy
+				end
+			end
+			if find({
+				"Load",
+				"OpenScreenshotsFolder",
+				"OpenVideosFolder"
+				}, index) then
+				error("Attempt to call a blocked function: " .. tostring(index), 2)
+			end
+			return _game[index](_game, ...)
 		end
 	else
-		return workspace.Parent[index]
+		if proxiedServices[index] then
+			return proxiedServices[index].proxy
+		end
+		return _game[index]
 	end
 end
 
 gameProxy.__newindex = function(self, index, value)
-	workspace.Parent[index] = value
+	_game[index] = value
 end
 
 gameProxy.__tostring = function(self)
-	return workspace.Parent.Name
+	return _game.Name
 end
 
-gameProxy.__metatable = getmetatable(workspace.Parent)
+gameProxy.__metatable = getmetatable(_game)
 
 Astronix.Game = Astronix.game
 
+--[[
+Astronix.workspace = newproxy(true)
+local workspaceProxy = getmetatable(Astronix.workspace)
+workspaceProxy.__index = function(self, index)
+	index = string.gsub(tostring(index), '\0', '')
+	if index == "Parent" then
+		return Astronix.game
+	end
+
+	if type(_workspace[index]) == "function" then
+		return function(self, ...)
+			return _workspace[index](_workspace, ...)
+		end
+	else
+		return _workspace[index]
+	end
+end
+
+workspaceProxy.__newindex = function(self, index, value)
+	_workspace[index] = value
+end
+
+workspaceProxy.__tostring = function(self)
+	return _workspace.Name
+end
+
+workspaceProxy.__metatable = getmetatable(_workspace)
+
+Astronix.Workspace = Astronix.workspace
+]]
+
 function Astronix.getgenv()
-	return Xeno
+	return Astronix
 end
 
 -- / Filesystem \ --
@@ -1161,6 +1329,11 @@ local function InternalGet(url)
 	return result.Body
 end
 
+pcall(function()
+	local body = InternalGet("https://httpbin.org/user-agent")
+	user_agent = HttpService:JSONDecode(body)["user-agent"]
+end)
+
 do
 	local libsLoaded = 0
 
@@ -1281,7 +1454,7 @@ local Drawing, drawingFunctions = DrawingLib.Drawing, DrawingLib.functions
 Astronix.Drawing = Drawing
 
 for name, func in drawingFunctions do
-	Xeno[name] = func
+	Astronix[name] = func
 end
 
 -- / Miscellaneous \ --
@@ -1300,9 +1473,42 @@ function Astronix.getproperties(instance)
 
 	objectValue:Destroy()
 
-	return HttpService:JSONDecode(result)
+	local properties, filtered = HttpService:JSONDecode(result), {}
+	for _, propertyName in next, properties do
+		local property, wasHidden = Astronix.gethiddenproperty(instance, propertyName)
+		if not wasHidden then
+			filtered[propertyName] = property
+		end
+	end
+
+	return filtered
 end
-Astronix.gethiddenproperties = Astronix.getproperties
+
+function Astronix.gethiddenproperties(instance)
+	assert(typeof(instance) == "Instance", "invalid argument #1 to 'getproperties' (Instance expected, got " .. typeof(instance) .. ") ", 2)
+
+	local objectValue = Instance.new("ObjectValue", objectPointerContainer)
+	objectValue.Name = HttpService:GenerateGUID(false)
+	objectValue.Value = instance
+
+	local result = Bridge:InternalRequest({
+		['c'] = "prp",
+		['cn'] = objectValue.Name,
+		['pid'] = tostring(ProcessID)
+	})
+
+	objectValue:Destroy()
+
+	local properties, filtered = HttpService:JSONDecode(result), {}
+	for _, propertyName in next, properties do
+		local property, wasHidden = Astronix.gethiddenproperty(instance, propertyName)
+		if wasHidden then
+			filtered[propertyName] = property
+		end
+	end
+
+	return filtered
+end
 
 local _saveinstance = nil
 function Astronix.saveinstance(options)
@@ -1377,7 +1583,7 @@ function Astronix.Decompile(script_instance)
 	if script_instance.ClassName ~= "LocalScript" and script_instance.ClassName ~= "ModuleScript" then
 		return "-- Only LocalScript and ModuleScript is supported but got \"" .. script_instance.ClassName .. "\""
 	end
-	return konst_call("/konstant/decompile", script_instance)
+	return tostring(konst_call("/konstant/decompile", script_instance)):gsub("\t", "    ")
 end
 Astronix.decompile = Astronix.Decompile
 
@@ -1389,7 +1595,7 @@ function Astronix.__Disassemble(script_instance)
 	if script_instance.ClassName ~= "LocalScript" and script_instance.ClassName ~= "ModuleScript" then
 		return "-- Only LocalScript and ModuleScript is supported but got \"" .. script_instance.ClassName .. "\""
 	end
-	return konst_call("/konstant/disassemble", script_instance)
+	return tostring(konst_call("/konstant/disassemble", script_instance)):gsub("\t", "    ")
 end
 Astronix.__disassemble = Astronix.__Disassemble
 
@@ -1482,6 +1688,11 @@ function Astronix.islclosure(func)
 end
 function Astronix.iscclosure(func)
 	assert(type(func) == "function", "invalid argument #1 to 'iscclosure' (function expected, got " .. type(func) .. ") ", 2)
+	for i, v in originalFunctions do
+		if func == v then
+			return true
+		end
+	end
 	return not Astronix.islclosure(func)
 end
 function Astronix.newlclosure(func)
@@ -1504,7 +1715,7 @@ function Astronix.fireclickdetector(part)
 	local clickDetector = part:FindFirstChild("ClickDetector") or part
 	local previousParent = clickDetector.Parent
 
-	local newPart = Instance.new("Part", workspace)
+	local newPart = Instance.new("Part", _workspace)
 	do
 		newPart.Transparency = 1
 		newPart.Size = Vector3.new(30, 30, 30)
@@ -1523,7 +1734,7 @@ function Astronix.fireclickdetector(part)
 	local vUser = game:FindService("VirtualUser") or game:GetService("VirtualUser")
 
 	local connection = RunService.Heartbeat:Connect(function()
-		local camera = workspace.CurrentCamera or workspace.Camera
+		local camera = _workspace.CurrentCamera or _workspace.Camera
 		newPart.CFrame = camera.CFrame * CFrame.new(0, 0, -20) * CFrame.new(camera.CFrame.LookVector.X, camera.CFrame.LookVector.Y, camera.CFrame.LookVector.Z)
 		vUser:ClickButton1(Vector2.new(20, 20), camera.CFrame)
 	end)
@@ -1625,6 +1836,24 @@ function Astronix.rconsoleinput(text)
 end
 Astronix.consoleinput = Astronix.rconsoleinput
 
+function Astronix.gethiddenproperty(instance, property)
+	assert(typeof(instance) == "Instance", "invalid argument #1 to 'gethiddenproperty' (Instance expected, got " .. typeof(instance) .. ") ", 2)
+	local success, r = pcall(function()
+		return instance[property]
+	end)
+	if success then
+		return r, false
+	end
+
+	local success, r = pcall(function()
+		return _game:GetService("UGCValidationService"):GetPropertyValue(instance, property)
+	end)
+
+	if success then
+		return r, true
+	end
+end
+
 local renv = {
 	print = print, warn = warn, error = error, assert = assert, collectgarbage = collectgarbage, require = require,
 	select = select, tonumber = tonumber, tostring = tostring, type = type, xpcall = xpcall,
@@ -1681,7 +1910,7 @@ local renv = {
 		traceback = debug.traceback, profilebegin = debug.profilebegin, profileend = debug.profileend,
 	},
 
-	game = game, workspace = workspace,
+	game = Astronix.game, workspace = Astronix.workspace, Game = Astronix.game, Workspace = Astronix.workspace,
 
 	getmetatable = getmetatable, setmetatable = setmetatable
 }
@@ -1733,7 +1962,7 @@ Astronix.isgameactive = Astronix.isrbxactive
 Astronix.iswindowactive = Astronix.isrbxactive
 
 function Astronix.getinstances()
-	return workspace.Parent:GetDescendants()
+	return _game:GetDescendants()
 end
 
 local nilinstances, cache = {Instance.new("Part")}, {cached = {}}
@@ -1764,7 +1993,7 @@ function Astronix.getgc()
 	return table.clone(nilinstances)
 end
 
-workspace.Parent.DescendantRemoving:Connect(function(des)
+_game.DescendantRemoving:Connect(function(des)
 	table.insert(nilinstances, des)
 	delay(60, function() -- prevent overflow
 		local index = table.find(nilinstances, des)
@@ -1777,7 +2006,7 @@ workspace.Parent.DescendantRemoving:Connect(function(des)
 	end)
 	cache.cached[des] = "r"
 end)
-workspace.Parent.DescendantAdded:Connect(function(des)
+_game.DescendantAdded:Connect(function(des)
 	cache.cached[des] = true
 end)
 
@@ -1861,13 +2090,14 @@ function Astronix.hookfunction(func, rep)
 	for i, v in pairs(env) do
 		if v == func then
 			env[i] = rep
+			return rep
 		end
 	end
 end
 Astronix.replaceclosure = Astronix.hookfunction
 
 function Astronix.cloneref(reference)
-	if workspace.Parent:FindFirstChild(reference.Name)  or reference.Parent == workspace.Parent then 
+	if _game:FindFirstChild(reference.Name) or reference.Parent == _game then 
 		return reference
 	else
 		local class = reference.ClassName
@@ -1895,7 +2125,7 @@ function Astronix.compareinstances(x, y)
 end
 
 function Astronix.gethui()
-	return Astronix.cloneref(workspace.Parent:FindService("CoreGui"))
+	return Astronix.cloneref(_game:FindService("CoreGui"))
 end
 
 function Astronix.isnetworkowner(part)
@@ -2151,68 +2381,68 @@ function Astronix.mouse1click(x, y)
 	x = x or 0
 	y = y or 0
 
-	VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, workspace.Parent, false)
+	VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, _game, false)
 	task.wait()
-	VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, workspace.Parent, false)
+	VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, _game, false)
 end
 
 function Astronix.mouse1press(x, y)
 	x = x or 0
 	y = y or 0
 
-	VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, workspace.Parent, false)
+	VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, _game, false)
 end
 
 function Astronix.mouse1release(x, y)
 	x = x or 0
 	y = y or 0
 
-	VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, workspace.Parent, false)
+	VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, _game, false)
 end
 
 function Astronix.mouse2click(x, y)
 	x = x or 0
 	y = y or 0
 
-	VirtualInputManager:SendMouseButtonEvent(x, y, 1, true, workspace.Parent, false)
+	VirtualInputManager:SendMouseButtonEvent(x, y, 1, true, _game, false)
 	task.wait()
-	VirtualInputManager:SendMouseButtonEvent(x, y, 1, false, workspace.Parent, false)
+	VirtualInputManager:SendMouseButtonEvent(x, y, 1, false, _game, false)
 end
 
 function Astronix.mouse2press(x, y)
 	x = x or 0
 	y = y or 0
 
-	VirtualInputManager:SendMouseButtonEvent(x, y, 1, true, workspace.Parent, false)
+	VirtualInputManager:SendMouseButtonEvent(x, y, 1, true, _game, false)
 end
 
 function Astronix.mouse2release(x, y)
 	x = x or 0
 	y = y or 0
 
-	VirtualInputManager:SendMouseButtonEvent(x, y, 1, false, workspace.Parent, false)
+	VirtualInputManager:SendMouseButtonEvent(x, y, 1, false, _game, false)
 end
 
 function Astronix.mousescroll(x, y, z)
-	VirtualInputManager:SendMouseWheelEvent(x or 0, y or 0, z or false, workspace.Parent)
+	VirtualInputManager:SendMouseWheelEvent(x or 0, y or 0, z or false, _game)
 end
 
 function Astronix.mousemoverel(x, y)
 	x = x or 0
 	y = y or 0
 
-	local vpSize = workspace.CurrentCamera.ViewportSize
+	local vpSize = _workspace.CurrentCamera.ViewportSize
 	local x = vpSize.X * x
 	local y = vpSize.Y * y
 
-	VirtualInputManager:SendMouseMoveEvent(x, y, workspace.Parent)
+	VirtualInputManager:SendMouseMoveEvent(x, y, _game)
 end
 
 function Astronix.mousemoveabs(x, y)
 	x = x or 0
 	y = y or 0
 
-	VirtualInputManager:SendMouseMoveEvent(x, y, workspace.Parent)
+	VirtualInputManager:SendMouseMoveEvent(x, y, _game)
 end
 
 function Astronix.getscriptclosure(s)
@@ -2222,21 +2452,46 @@ function Astronix.getscriptclosure(s)
 end
 Astronix.getscriptfunction = Astronix.getscriptclosure
 
+local ssbs = {}
+
 function Astronix.isscriptable(object, property)
 	if object and typeof(object) == 'Instance' then
-		local success, result = pcall(function()
+		local s, r = pcall(function()
+			return ssbs[object][property]
+		end)
+		if s and r ~= nil then
+			return r
+		end
+		local s, r = pcall(function()
 			return object[property] ~= nil
 		end)
-		return success and result
+		return s and r
 	end
 	return false
 end
+
+function Astronix.setscriptable(object, property, bool)
+	if object and typeof(object) == 'Instance' and property then
+		local scriptable = Astronix.isscriptable(object, property)
+		local s = pcall(function()
+			ssbs[object][property] = bool
+		end)
+		if not s then
+			ssbs[object] = {[property] = bool}
+		end
+		return scriptable
+	end
+end
+
+originalFunctions = table.clone(Astronix)
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
 local function merge(t1, t2)
-	for k, v in pairs(t2) do t1[k] = v end
+	for k, v in pairs(t2) do 
+		t1[k] = v
+	end
 	return t1
 end
 
@@ -2244,7 +2499,7 @@ task.spawn(function() -- queue_on_teleport handler
 	local source = Bridge:queue_on_teleport("g")
 	if type(source) == "string" and source ~= "" then
 		local rawLoadstringFunc = Bridge:loadstring(source, "queue_on_teleport")
-		setfenv(rawLoadstringFunc, merge(getfenv(rawLoadstringFunc), Xeno))
+		setfenv(rawLoadstringFunc, merge(getfenv(rawLoadstringFunc), Astronix))
 		task.spawn(rawLoadstringFunc)
 	end
 end)
@@ -2259,7 +2514,7 @@ task.spawn(function() -- auto execute
 	})
 	if result and result.Success and result.Body ~= "" then
 		local rawLoadstringFunc = Bridge:loadstring(result.Body, "autoexec")
-		setfenv(rawLoadstringFunc, merge(getfenv(rawLoadstringFunc), Xeno))
+		setfenv(rawLoadstringFunc, merge(getfenv(rawLoadstringFunc), Astronix))
 		task.spawn(rawLoadstringFunc)
 	end
 end)
@@ -2270,9 +2525,9 @@ local function listen(coreModule)
 		pcall(function()
 			execution_table = _require(coreModule)
 		end)
-		if type(execution_table) == "table" and execution_table["a s t r o n i x"] and (not execution_table.__executed) and coreModule.Parent == scriptsContainer then
-			local execLoad = execution_table["a s t r o n i x"]
-			setfenv(execLoad, merge(getfenv(execLoad), Xeno))
+		if type(execution_table) == "table" and execution_table["x e n o"] and (not execution_table.__executed) and coreModule.Parent == scriptsContainer then
+			local execLoad = execution_table["x e n o"]
+			setfenv(execLoad, merge(getfenv(execLoad), Astronix))
 			task.spawn(execLoad)
 
 			execution_table.__executed = true
@@ -2283,7 +2538,7 @@ end
 
 task.spawn(function() -- execution handler
 	while task.wait(.06) do
-		local coreModule = workspace.Parent.Clone(coreModules[math.random(1, #coreModules)])
+		local coreModule = _game.Clone(coreModules[math.random(1, #coreModules)])
 		coreModule:ClearAllChildren()
 
 		coreModule.Name = HttpService:GenerateGUID(false)
@@ -2296,5 +2551,3 @@ task.spawn(function() -- execution handler
 		end)
 	end
 end)
-
-			assert(true, warn("Astronix v1.0.0 loaded.")
