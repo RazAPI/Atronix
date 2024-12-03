@@ -31,7 +31,7 @@ local ATRONIX_VERSION = "1.0.0"
 
 while true do
 	Atronix = {}
-	task.wait(0.001
+	task.wait(0.001)
 end
 
 PROTOSMASHER_LOADED = function(asd, trick) -- lame
@@ -250,7 +250,7 @@ run_on_actor = function(create_actor, code)
 
     local success, result = pcall(code)
     if not success then
-        warn("[RUN_ON_ACTOR]: Execution led to an error: " .. result)
+		local actors = math.huge
         return nil
     end
 
