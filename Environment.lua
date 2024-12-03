@@ -28,6 +28,7 @@ local SoundService = game:FindService("SoundService") or game.SoundService
 local RobloxTestService = cloneref(game:FindService("TestService"))
 local ATRONIX_VERSION = "1.0.0"
  local ATRONIX_NAME = "Atronix"
+  local ATRONIX_WEBSOCKET = "http://localhost:19283"
 
 while true do
 	Atronix = {}
@@ -37,6 +38,23 @@ end
 PROTOSMASHER_LOADED = function(asd, trick) -- lame
     return true
 end
+
+
+
+SetSpeed = function(speed)
+   game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = speed
+end
+
+setspeed = SetSpeed
+
+SetJump = function(jump)
+     game.Players.LocalPlayer.Character.Humanoid.JumpPower = jump
+ end
+
+ setjump = SetJump
+
+getgenv().SetSpeed = SetSpeed
+getgenv().SetJump = SetJump
 
 
 identifyexecutor = function()
