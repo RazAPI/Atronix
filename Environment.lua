@@ -1,3 +1,5 @@
+assert(true, warn("Atronix v1.0.0 loaded"))
+
 local Workspace = game:FindService("Workspace") or game.Workspace
 local RobloxWorkspace = game:FindService("Workspace") or game.Workspace
 local Players = game:FindService("Players") or game.Players
@@ -305,4 +307,4 @@ end
     end
 end
 
-assert(true, warn("Atronix v1.0.0 loaded"))
+
