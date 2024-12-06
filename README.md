@@ -10,3 +10,6 @@ The current UNC is ~80%~
 ![image](https://github.com/user-attachments/assets/64f9de50-520f-45f1-bd8f-7c5ffeb72666)
 
 
+
+
+# I discontinued this project 5 days ago.
